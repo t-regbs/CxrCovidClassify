@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">CxrCovidClassify</string>
+    <string name="camera_error" translation_description="Error regarding camera support[CHAR_LIMIT=40]">This device doesn\'t support Camera2 API.</string>
+    <string name="gpu_quant_error" translation_description="Error regarding GPU support for Quant models[CHAR_LIMIT=60]">GPU does not yet supported quantized models.</string>
+    <string name="ic_model" translatable="false">Model:</string>
+    <string name="device">Device</string>
 </resources>
