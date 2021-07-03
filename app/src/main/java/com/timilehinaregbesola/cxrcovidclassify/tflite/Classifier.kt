@@ -98,11 +98,44 @@ abstract class Classifier protected constructor(
         }
     }
 
+//    /** Runs inference and returns the classification results.  */
+//    fun recognizeImage(bitmap: Bitmap, sensorOrientation: Int): List<Recognition> {
+//        // Logs this method so that it can be analyzed with systrace.
+//        Trace.beginSection("recognizeImage")
+//        Trace.beginSection("loadImage")
+//        val startTimeForLoadImage = SystemClock.uptimeMillis()
+//        inputImageBuffer = loadImage(bitmap, sensorOrientation)
+//        val endTimeForLoadImage = SystemClock.uptimeMillis()
+//        Trace.endSection()
+//        Timber.v("Timecost to load the image: %s", (endTimeForLoadImage - startTimeForLoadImage))
+//
+//        // Runs the inference call.
+//        Trace.beginSection("runInference")
+//        val startTimeForReference = SystemClock.uptimeMillis()
+//        // Run TFLite inference
+//        tflite!!.run(inputImageBuffer.buffer, outputProbabilityBuffer.buffer.rewind())
+//        val endTimeForReference = SystemClock.uptimeMillis()
+//        Trace.endSection()
+//        Timber.v("Timecost to run model inference: %s", (endTimeForReference - startTimeForReference))
+//
+//        // Gets the map of label and probability.
+//        // Use TensorLabel from TFLite Support Library to associate the probabilities
+//        //       with category labels
+//        val labeledProbability: Map<String, Float> =
+//            TensorLabel(labels, probabilityProcessor.process(outputProbabilityBuffer))
+//                .mapWithFloatValue
+//        Trace.endSection()
+//
+//        // Gets top-k results.
+//        return getTopKProbability(labeledProbability)
+//    }
+
     /** Runs inference and returns the classification results.  */
-    fun recognizeImage(bitmap: Bitmap, sensorOrientation: Int): List<Recognition> {
+    fun recognizeImage(bitmap: Bitmap, sensorOrientation: Int): Float {
         // Logs this method so that it can be analyzed with systrace.
         Trace.beginSection("recognizeImage")
         Trace.beginSection("loadImage")
+        Timber.d("fire: $sensorOrientation")
         val startTimeForLoadImage = SystemClock.uptimeMillis()
         inputImageBuffer = loadImage(bitmap, sensorOrientation)
         val endTimeForLoadImage = SystemClock.uptimeMillis()
@@ -121,13 +154,16 @@ abstract class Classifier protected constructor(
         // Gets the map of label and probability.
         // Use TensorLabel from TFLite Support Library to associate the probabilities
         //       with category labels
-        val labeledProbability: Map<String, Float> =
-            TensorLabel(labels, probabilityProcessor.process(outputProbabilityBuffer))
-                .mapWithFloatValue
+        probabilityProcessor.process(outputProbabilityBuffer)
+        Timber.d(outputProbabilityBuffer.floatArray[0].toString())
+//        val labeledProbability: Map<String, Float> =
+//            TensorLabel(labels, probabilityProcessor.process(outputProbabilityBuffer))
+//                .mapWithFloatValue
+//        Timber.d(labeledProbability.toString())
         Trace.endSection()
 
         // Gets top-k results.
-        return getTopKProbability(labeledProbability)
+        return outputProbabilityBuffer.floatArray[0]
     }
 
     /** Closes the interpreter and model to release resources.  */
@@ -225,6 +261,7 @@ abstract class Classifier protected constructor(
     /** Initializes a `Classifier`.  */
     init {
         tfliteModel = FileUtil.loadMappedFile(activity!!, modelPath!!)
+//        tfliteModel = ModelQuant.newInstance(activity!!)
         when (device) {
             Device.GPU -> {
                 // Create a GPU delegate instance and add it to the interpreter options

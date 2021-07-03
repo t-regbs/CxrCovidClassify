@@ -25,7 +25,6 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior.BottomSheetCa
 import com.timilehinaregbesola.cxrcovidclassify.CameraConnectionFragment.ConnectionCallback
 import com.timilehinaregbesola.cxrcovidclassify.databinding.ActivityCameraBinding
 import com.timilehinaregbesola.cxrcovidclassify.tflite.Classifier.Device
-import com.timilehinaregbesola.cxrcovidclassify.tflite.Classifier.Recognition
 import com.timilehinaregbesola.cxrcovidclassify.utils.ImageUtils
 import timber.log.Timber
 
@@ -74,7 +73,7 @@ abstract class CameraActivity :
                         binding.bottomSheetLayout.gestureLayout.viewTreeObserver.removeOnGlobalLayoutListener(this)
                     }
                     //                int width = bottomSheetLayout.getMeasuredWidth();
-                    val height = binding.bottomSheetLayout.gestureLayout.getMeasuredHeight()
+                    val height = binding.bottomSheetLayout.gestureLayout.measuredHeight
                     sheetBehavior!!.peekHeight = height
                 }
             })
@@ -96,6 +95,9 @@ abstract class CameraActivity :
                         BottomSheetBehavior.STATE_SETTLING -> binding.bottomSheetLayout.bottomSheetArrow.setImageResource(
                             R.drawable.ic_arrow_up
                         )
+                        BottomSheetBehavior.STATE_HALF_EXPANDED -> {
+                            // Do nothing
+                        }
                     }
                 }
 
@@ -114,7 +116,7 @@ abstract class CameraActivity :
     }
 
     protected val luminance: ByteArray?
-        protected get() = yuvBytes[0]
+        get() = yuvBytes[0]
 
     /** Callback for android.hardware.Camera API  */
     override fun onPreviewFrame(bytes: ByteArray, camera: Camera) {
@@ -383,23 +385,34 @@ abstract class CameraActivity :
         }
 
     @UiThread
-    protected fun showResultsInBottomSheet(results: List<Recognition?>?) {
-        if (results != null && results.size >= 2) {
-            val recognition: Recognition? = results[0]
-            if (recognition != null) {
-                if (recognition.title != null) binding.bottomSheetLayout.detectedItem.text = recognition.title
-                if (recognition.confidence != null) binding.bottomSheetLayout.detectedItemValue.text =
-                    java.lang.String.format("%.2f", 100 * recognition.confidence)
-                    .toString() + "%"
+    protected fun showResultsInBottomSheet(results: Float) {
+        if (results != null) {
+            if (results < 0.5) {
+                // means prediction was for category corresponding to 0
+                binding.bottomSheetLayout.detectedItem.text = "Negative"
+                binding.bottomSheetLayout.detectedItemValue.text =
+                    String.format("%.2f", 100 * results) + "%"
+            } else {
+                // means prediction was for category corresponding to 1
+                binding.bottomSheetLayout.detectedItem.text = "Positive"
+                binding.bottomSheetLayout.detectedItemValue.text =
+                    String.format("%.2f", 100 * results) + "%"
             }
-            val recognition1: Recognition? = results[1]
-            if (recognition1 != null) {
-                if (recognition1.title != null) binding.bottomSheetLayout.detectedItem1.text =
-                    recognition1.title
-                if (recognition1.confidence != null) binding.bottomSheetLayout.detectedItem1Value.text =
-                    java.lang.String.format("%.2f", 100 * recognition1.confidence)
-                    .toString() + "%"
-            }
+//            val recognition: Recognition? = results[0]
+//            if (recognition != null) {
+//                if (recognition.title != null) binding.bottomSheetLayout.detectedItem.text = recognition.title
+//                if (recognition.confidence != null) binding.bottomSheetLayout.detectedItemValue.text =
+//                    java.lang.String.format("%.2f", 100 * recognition.confidence)
+//                    .toString() + "%"
+//            }
+//            val recognition1: Recognition? = results[1]
+//            if (recognition1 != null) {
+//                if (recognition1.title != null) binding.bottomSheetLayout.detectedItem1.text =
+//                    recognition1.title
+//                if (recognition1.confidence != null) binding.bottomSheetLayout.detectedItem1Value.text =
+//                    java.lang.String.format("%.2f", 100 * recognition1.confidence)
+//                    .toString() + "%"
+//            }
 //            val recognition2: Recognition? = results[2]
 //            if (recognition2 != null) {
 //                if (recognition2.title != null) binding.bottomSheetLayout.detectedItem2.text =
@@ -408,7 +421,6 @@ abstract class CameraActivity :
 //                    java.lang.String.format("%.2f", 100 * recognition2.confidence)
 //                    .toString() + "%"
 //            }
-
         }
     }
 

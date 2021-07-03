@@ -17,7 +17,7 @@ class ClassifierQuantizedResNet
         get() = "model_quant.tflite"
 
     override val labelPath: String
-        get() = "labels_without_background.txt"
+        get() = "labels.txt"
     override val preprocessNormalizeOp: TensorOperator
         get() = NormalizeOp(IMAGE_MEAN, IMAGE_STD)
     override val postprocessNormalizeOp: TensorOperator

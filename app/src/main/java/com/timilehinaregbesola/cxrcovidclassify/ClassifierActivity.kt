@@ -8,7 +8,6 @@ import android.util.Size
 import android.util.TypedValue
 import com.timilehinaregbesola.cxrcovidclassify.tflite.Classifier
 import com.timilehinaregbesola.cxrcovidclassify.tflite.Classifier.Device
-import com.timilehinaregbesola.cxrcovidclassify.tflite.Classifier.Recognition
 import com.timilehinaregbesola.cxrcovidclassify.utils.BorderedText
 import timber.log.Timber
 import java.io.IOException
@@ -62,7 +61,9 @@ class ClassifierActivity : CameraActivity(), ImageReader.OnImageAvailableListene
         runInBackground {
             if (classifier != null) {
                 val startTime = SystemClock.uptimeMillis()
-                val results: List<Recognition?> =
+//                val results: List<Recognition?> =
+//                    classifier!!.recognizeImage(rgbFrameBitmap!!, sensorOrientation!!)
+                val results: Float =
                     classifier!!.recognizeImage(rgbFrameBitmap!!, sensorOrientation!!)
                 lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime
                 Timber.v("Detect: %s", results)
