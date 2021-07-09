@@ -1,118 +1,274 @@
 package com.timilehinaregbesola.cxrcovidclassify
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.Typeface
-import android.media.ImageReader
-import android.os.SystemClock
+import android.graphics.Matrix
+import android.os.Bundle
 import android.util.Size
-import android.util.TypedValue
-import com.timilehinaregbesola.cxrcovidclassify.tflite.Classifier
-import com.timilehinaregbesola.cxrcovidclassify.tflite.Classifier.Device
-import com.timilehinaregbesola.cxrcovidclassify.utils.BorderedText
+import android.widget.Toast
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
+import androidx.camera.core.*
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.RecyclerView
+import com.timilehinaregbesola.cxrcovidclassify.ml.Covid
+import com.timilehinaregbesola.cxrcovidclassify.utils.ImageUtils.convertBitmapToByteBuffer
+import com.timilehinaregbesola.cxrcovidclassify.utils.YuvToRgbConverter
+import org.tensorflow.lite.DataType
+import org.tensorflow.lite.gpu.CompatibilityList
+import org.tensorflow.lite.support.model.Model
+import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 import timber.log.Timber
-import java.io.IOException
+import java.util.concurrent.Executors
 
-class ClassifierActivity : CameraActivity(), ImageReader.OnImageAvailableListener {
-    private var rgbFrameBitmap: Bitmap? = null
-    private var lastProcessingTimeMs: Long = 0
-    private var sensorOrientation: Int? = null
-    private var classifier: Classifier? = null
-    private var borderedText: BorderedText? = null
+// Constants
+private const val REQUEST_CODE_PERMISSIONS = 999 // Return code after asking for permission
+private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA) // permission needed
 
-    /** Input image size of the model along x axis.  */
-    private var imageSizeX = 0
+// Listener for the result of the ImageAnalyzer
+typealias RecognitionListener = (recognition: List<Recognition>) -> Unit
 
-    /** Input image size of the model along y axis.  */
-    private var imageSizeY = 0
+/**
+ * Main entry point into TensorFlow Lite Classifier
+ */
+class ClassifierActivity : AppCompatActivity() {
 
-    override fun onPreviewSizeChosen(size: Size?, rotation: Int) {
-        val textSizePx = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP, TEXT_SIZE_DIP, resources.displayMetrics
-        )
-        borderedText = BorderedText(textSizePx)
-        borderedText!!.setTypeface(Typeface.MONOSPACE)
-        recreateClassifier(getDevice(), getNumThreads())
-        if (classifier == null) {
-            Timber.e("No classifier on preview!")
-            return
-        }
-        previewWidth = size!!.width
-        previewHeight = size.height
-        sensorOrientation = rotation - screenOrientation
-        Timber.i("Camera orientation relative to screen canvas: %d", sensorOrientation)
-        Timber.i("Initializing at size %dx%d", previewWidth, previewHeight)
-        rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Bitmap.Config.ARGB_8888)
+    // CameraX variables
+    private lateinit var preview: Preview // Preview use case, fast, responsive view of the camera
+    private lateinit var imageAnalyzer: ImageAnalysis // Analysis use case, for running ML code
+    private lateinit var camera: Camera
+    private val cameraExecutor = Executors.newSingleThreadExecutor()
+
+    // Views attachment
+    private val resultRecyclerView by lazy {
+        findViewById<RecyclerView>(R.id.recognitionResults) // Display the result of analysis
+    }
+    private val viewFinder by lazy {
+        findViewById<PreviewView>(R.id.viewFinder) // Display the preview image from Camera
     }
 
-    override val desiredPreviewFrameSize: Size?
-        get() = Size(640, 480)
+    // Contains the recognition result. Since  it is a viewModel, it will survive screen rotations
+    private val recogViewModel: RecognitionListViewModel by viewModels()
 
-    override fun processImage() {
-        rgbFrameBitmap!!.setPixels(
-            getRgbBytes(),
-            0,
-            previewWidth,
-            0,
-            0,
-            previewWidth,
-            previewHeight
-        )
-        val cropSize = Math.min(previewWidth, previewHeight)
-        runInBackground {
-            if (classifier != null) {
-                val startTime = SystemClock.uptimeMillis()
-//                val results: List<Recognition?> =
-//                    classifier!!.recognizeImage(rgbFrameBitmap!!, sensorOrientation!!)
-                val results: Float =
-                    classifier!!.recognizeImage(rgbFrameBitmap!!, sensorOrientation!!)
-                lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime
-                Timber.v("Detect: %s", results)
-                runOnUiThread {
-                    showResultsInBottomSheet(results)
-                    showFrameInfo(previewWidth.toString() + "x" + previewHeight)
-                    showCropInfo(imageSizeX.toString() + "x" + imageSizeY)
-                    showCameraResolution(cropSize.toString() + "x" + cropSize)
-                    showRotationInfo(sensorOrientation.toString())
-                    showInference(lastProcessingTimeMs.toString() + "ms")
-                }
-            }
-            readyForNextImage()
-        }
-    }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_classifier)
 
-    override fun onInferenceConfigurationChanged() {
-        if (rgbFrameBitmap == null) {
-            // Defer creation until we're getting camera frames.
-            return
-        }
-        val device: Device = getDevice()
-        val numThreads = getNumThreads()
-        runInBackground { recreateClassifier(device, numThreads) }
-    }
-
-    private fun recreateClassifier(device: Device, numThreads: Int) {
-        if (classifier != null) {
-            Timber.d("Closing classifier.")
-            classifier!!.close()
-            classifier = null
-        }
-        try {
-            Timber.d(
-                "Creating classifier (device=%s, numThreads=%d)", device, numThreads
+        // Request camera permissions
+        if (allPermissionsGranted()) {
+            startCamera()
+        } else {
+            ActivityCompat.requestPermissions(
+                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
             )
-            classifier = Classifier.create(this, device, numThreads)
-        } catch (e: IOException) {
-            Timber.e(e, "Failed to create classifier.")
         }
 
-        // Updates the input image size.
-        imageSizeX = classifier!!.imageSizeX
-        imageSizeY = classifier!!.imageSizeY
+        // Initialising the resultRecyclerView and its linked viewAdaptor
+        val viewAdapter = RecognitionAdapter(this)
+        resultRecyclerView.adapter = viewAdapter
+
+        // Disable recycler view animation to reduce flickering, otherwise items can move, fade in
+        // and out as the list change
+        resultRecyclerView.itemAnimator = null
+        recogViewModel.recognitionList.observe(
+            this,
+            {
+                viewAdapter.submitList(it)
+            }
+        )
     }
 
-    companion object {
-//        protected val desiredPreviewFrameSize = Size(640, 480)
-//            protected get() = Companion.field
-        private const val TEXT_SIZE_DIP = 10f
+    /**
+     * Check all permissions are granted - use for Camera permission in this example.
+     */
+    private fun allPermissionsGranted(): Boolean = REQUIRED_PERMISSIONS.all {
+        ContextCompat.checkSelfPermission(
+            baseContext, it
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    /**
+     * This gets called after the Camera permission pop up is shown.
+     */
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CODE_PERMISSIONS) {
+            if (allPermissionsGranted()) {
+                startCamera()
+            } else {
+                Toast.makeText(
+                    this,
+                    getString(R.string.permission_deny_text),
+                    Toast.LENGTH_SHORT
+                ).show()
+                finish()
+            }
+        }
+    }
+
+    /**
+     * Start the Camera which involves:
+     *
+     * 1. Initialising the preview use case
+     * 2. Initialising the image analyser use case
+     * 3. Attach both to the lifecycle of this activity
+     * 4. Pipe the output of the preview object to the PreviewView on the screen
+     */
+    private fun startCamera() {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+
+        cameraProviderFuture.addListener(
+            {
+                // Used to bind the lifecycle of cameras to the lifecycle owner
+                val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+
+                preview = Preview.Builder()
+                    .build()
+
+                imageAnalyzer = ImageAnalysis.Builder()
+                    // This sets the ideal size for the image to be analyse, CameraX will choose the
+                    // the most suitable resolution which may not be exactly the same or hold the same
+                    // aspect ratio
+                    .setTargetResolution(Size(224, 224))
+                    // How the Image Analyser should pipe in input, 1. every frame but drop no frame, or
+                    // 2. go to the latest frame and may drop some frame. The default is 2.
+                    // STRATEGY_KEEP_ONLY_LATEST. The following line is optional, kept here for clarity
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build()
+                    .also { analysisUseCase: ImageAnalysis ->
+                        analysisUseCase.setAnalyzer(
+                            cameraExecutor,
+                            ImageAnalyzer(this) { items ->
+                                // updating the list of recognised objects
+                                recogViewModel.updateData(items)
+                            }
+                        )
+                    }
+
+                // Select camera, back is the default. If it is not available, choose front camera
+                val cameraSelector =
+                    if (cameraProvider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA))
+                        CameraSelector.DEFAULT_BACK_CAMERA else CameraSelector.DEFAULT_FRONT_CAMERA
+
+                try {
+                    // Unbind use cases before rebinding
+                    cameraProvider.unbindAll()
+
+                    // Bind use cases to camera - try to bind everything at once and CameraX will find
+                    // the best combination.
+                    camera = cameraProvider.bindToLifecycle(
+                        this, cameraSelector, preview, imageAnalyzer
+                    )
+
+                    // Attach the preview to preview view, aka View Finder
+                    preview.setSurfaceProvider(viewFinder.surfaceProvider)
+                } catch (exc: Exception) {
+                    Timber.e(exc, "Use case binding failed")
+                }
+            },
+            ContextCompat.getMainExecutor(this)
+        )
+    }
+
+    private class ImageAnalyzer(ctx: Context, private val listener: RecognitionListener) :
+        ImageAnalysis.Analyzer {
+
+        // Add class variable TensorFlow Lite Model
+        // Initializing the cxrModel by lazy so that it runs in the same thread when the process
+        // method is called.
+        private val cxrModel: Covid by lazy {
+
+            // Optional GPU acceleration
+            val compatList = CompatibilityList()
+
+            val options = if (compatList.isDelegateSupportedOnThisDevice) {
+                Timber.d("This device is GPU Compatible ")
+                Model.Options.Builder().setDevice(Model.Device.GPU).build()
+            } else {
+                Timber.d("This device is GPU Incompatible ")
+                Model.Options.Builder().setNumThreads(4).build()
+            }
+
+            // Initialize the CovidCXR Model
+            Covid.newInstance(ctx, options)
+        }
+
+        override fun analyze(imageProxy: ImageProxy) {
+            val items = mutableListOf<Recognition>()
+
+            // Convert Image to Bitmap, resize then to ByteBuffer
+            val image = toBitmap(imageProxy)
+            val resizedImage = Bitmap.createScaledBitmap(image!!, 224, 224, true)
+            val byteBuffer = convertBitmapToByteBuffer(resizedImage)
+
+            val tfBuffer = TensorBuffer.createFixedSize(intArrayOf(1, 224, 224, 3), DataType.FLOAT32)
+            tfBuffer.loadBuffer(byteBuffer)
+
+            // Process the image using the trained model, sort and pick out the top results
+            val outputs = cxrModel.process(tfBuffer)
+                .outputFeature0AsTensorBuffer.floatArray[0]
+
+            if (outputs < 0.5) {
+                // means prediction was for category corresponding to 0
+                items.add(Recognition("Negative", outputs))
+            } else {
+                // means prediction was for category corresponding to 1
+                items.add(Recognition("Positive", outputs))
+            }
+
+            // Return the result
+            listener(items.toList())
+
+            // Close the image,this tells CameraX to feed the next image to the analyzer
+            imageProxy.close()
+        }
+
+        /**
+         * Convert Image Proxy to Bitmap
+         */
+        private val yuvToRgbConverter = YuvToRgbConverter(ctx)
+        private lateinit var bitmapBuffer: Bitmap
+        private lateinit var rotationMatrix: Matrix
+
+        @SuppressLint("UnsafeExperimentalUsageError", "UnsafeOptInUsageError")
+        private fun toBitmap(imageProxy: ImageProxy): Bitmap? {
+
+            val image = imageProxy.image ?: return null
+
+            // Initialise Buffer
+            if (!::bitmapBuffer.isInitialized) {
+                // The image rotation and RGB image buffer are initialized only once
+                Timber.d("Initalise toBitmap()")
+                rotationMatrix = Matrix()
+                rotationMatrix.postRotate(imageProxy.imageInfo.rotationDegrees.toFloat())
+                bitmapBuffer = Bitmap.createBitmap(
+                    imageProxy.width, imageProxy.height, Bitmap.Config.ARGB_8888
+                )
+            }
+
+            // Pass image to an image analyser
+            yuvToRgbConverter.yuvToRgb(image, bitmapBuffer)
+
+            // Create the Bitmap in the correct orientation
+            return Bitmap.createBitmap(
+                bitmapBuffer,
+                0,
+                0,
+                bitmapBuffer.width,
+                bitmapBuffer.height,
+                rotationMatrix,
+                false
+            )
+        }
     }
 }

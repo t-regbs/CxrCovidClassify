@@ -12,11 +12,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.ViewModelProviders
 import com.timilehinaregbesola.cxrcovidclassify.databinding.ActivityUploadImageBinding
-import com.timilehinaregbesola.cxrcovidclassify.tflite.Classifier
+import com.timilehinaregbesola.cxrcovidclassify.ml.Covid
 import java.io.File
 
 class UploadImageActivity : AppCompatActivity() {
-    private var classifier: Classifier? = null
     private var bitmapp: Bitmap? = null
     companion object {
         const val PICK_IMAGE = 1
@@ -35,6 +34,8 @@ class UploadImageActivity : AppCompatActivity() {
             this,
             { results ->
                 // update UI
+                println("Result: $results")
+                println("-Re: $results")
                 binding.btnRun.isEnabled = true
                 binding.loading.visibility = View.GONE
                 binding.txtLabel.visibility = View.VISIBLE
@@ -60,7 +61,7 @@ class UploadImageActivity : AppCompatActivity() {
             pickImage()
         }
         binding.btnRun.setOnClickListener {
-            classifier = Classifier.create(this, Classifier.Device.CPU, 1)
+//            classifier = Classifier.create(this, Classifier.Device.CPU, 1)
             processImage()
         }
     }
@@ -113,13 +114,15 @@ class UploadImageActivity : AppCompatActivity() {
         binding.txtLabel.visibility = View.INVISIBLE
         binding.txtLabelValue.visibility = View.INVISIBLE
         binding.loading.visibility = View.VISIBLE
-        model.process(classifier!!, bitmapp!!)
+        val cxrModel = Covid.newInstance(this)
+        model.process(cxrModel, bitmapp!!)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == PICK_IMAGE) {
             if (resultCode != RESULT_OK) {
+                println("Result not ok")
                 return
             }
             val uri = data?.data
@@ -128,6 +131,7 @@ class UploadImageActivity : AppCompatActivity() {
 //                // do something with file
 //            }
             if (uri != null) {
+                println(uri.toString())
                 bitmapp = uriToBitmap(uri)
                 binding.imgSelectedImage.setImageBitmap(bitmapp)
                 binding.btnRun.isEnabled = true

@@ -4,4 +4,6 @@
     <string name="gpu_quant_error" translation_description="Error regarding GPU support for Quant models[CHAR_LIMIT=60]">GPU does not yet supported quantized models.</string>
     <string name="ic_model" translatable="false">Model:</string>
     <string name="device">Device</string>
+    <string name="logo_description">Logo</string>
+    <string name="permission_deny_text">Required permissions denied. Exiting.</string>
 </resources>

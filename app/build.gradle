@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
     id 'kotlin-android'
+    id 'kotlin-kapt'
 }
 
 android {
@@ -24,6 +25,7 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        dataBinding = true
         mlModelBinding true
     }
     compileOptions {
@@ -49,9 +51,15 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
-    // CameraX
-    implementation 'androidx.camera:camera-core:1.1.0-alpha05'
-    implementation 'androidx.camera:camera-camera2:1.1.0-alpha05'
+    // Import for CameraX
+    def camerax_version = "1.1.0-alpha06"
+    // CameraX core library using camera2 implementation
+    implementation "androidx.camera:camera-camera2:$camerax_version"
+    // CameraX Lifecycle Library
+    implementation "androidx.camera:camera-lifecycle:$camerax_version"
+    // CameraX View class
+    implementation "androidx.camera:camera-view:1.0.0-alpha26"
+    implementation "androidx.activity:activity-ktx:1.2.3"
     // Task API
     implementation "com.google.android.gms:play-services-tasks:17.2.1"
 
