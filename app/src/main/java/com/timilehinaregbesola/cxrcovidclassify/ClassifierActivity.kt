@@ -6,8 +6,12 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.os.Build
 import android.os.Bundle
 import android.util.Size
+import android.view.View
+import android.view.Window
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -59,7 +63,7 @@ class ClassifierActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_classifier)
-
+        window.makeTransparentStatusBar()
         // Request camera permissions
         if (allPermissionsGranted()) {
             startCamera()
@@ -76,12 +80,7 @@ class ClassifierActivity : AppCompatActivity() {
         // Disable recycler view animation to reduce flickering, otherwise items can move, fade in
         // and out as the list change
         resultRecyclerView.itemAnimator = null
-        recogViewModel.recognitionList.observe(
-            this,
-            {
-                viewAdapter.submitList(it)
-            }
-        )
+        recogViewModel.recognitionList.observe(this) { viewAdapter.submitList(it) }
     }
 
     /**
@@ -268,6 +267,17 @@ class ClassifierActivity : AppCompatActivity() {
                 bitmapBuffer.height,
                 rotationMatrix,
                 false
+            )
+        }
+    }
+
+    private fun Window.makeTransparentStatusBar() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        } else {
+            setFlags(
+                WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS,
+                WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS
             )
         }
     }

@@ -19,12 +19,13 @@
         android:layout_gravity="top"
         android:background="#8000">
 
-        <ImageView
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:backgroundTint="@android:color/holo_red_dark"
-            android:src="@drawable/ic_baseline_local_hospital_24"
-            android:contentDescription="@string/logo_description" />
+            android:textColor="@color/white"
+            android:textSize="20sp"
+            android:layout_gravity="center"
+            android:text="Covid Scanner"/>
 
     </androidx.appcompat.widget.Toolbar>
 
