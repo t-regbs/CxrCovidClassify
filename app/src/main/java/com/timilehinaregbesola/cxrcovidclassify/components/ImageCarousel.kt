@@ -38,7 +38,7 @@ fun ImageCarousel(
     ) { page ->
         Card(
             modifier = Modifier
-                .width(280.dp)
+                .width(261.dp)
                 .height(316.dp)
                 .graphicsLayer {
                     val pageOffset =

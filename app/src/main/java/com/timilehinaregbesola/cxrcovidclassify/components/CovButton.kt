@@ -1,6 +1,7 @@
 package com.timilehinaregbesola.cxrcovidclassify.components
 
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,9 +30,9 @@ fun CovButton(
 ) {
     Button(
         modifier = Modifier
-            .padding(horizontal = 24.dp)
-            .width(300.dp)
-            .height(70.dp),
+            .height(70.dp)
+            .fillMaxWidth()
+            .padding(horizontal = 36.dp),
         colors = ButtonDefaults.buttonColors(backgroundColor = color),
         shape = RoundedCornerShape(16.dp),
         onClick = onClick,

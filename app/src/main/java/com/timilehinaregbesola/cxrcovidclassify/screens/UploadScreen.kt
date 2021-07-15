@@ -12,9 +12,11 @@ import android.provider.MediaStore
 import android.provider.OpenableColumns
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,6 +27,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.Card
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Surface
@@ -37,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,6 +48,7 @@ import androidx.core.app.ActivityCompat
 import androidx.navigation.NavHostController
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.rememberPagerState
+import com.timilehinaregbesola.cxrcovidclassify.R
 import com.timilehinaregbesola.cxrcovidclassify.UploadState
 import com.timilehinaregbesola.cxrcovidclassify.UploadViewModel
 import com.timilehinaregbesola.cxrcovidclassify.components.CovButton
@@ -129,7 +134,9 @@ fun UploadScreen(navController: NavHostController, viewModel: UploadViewModel) {
                             .height(316.dp),
                         shape = MaterialTheme.shapes.medium.copy(CornerSize(24.dp)),
                         elevation = 8.dp
-                    ) {}
+                    ) {
+                        Image(painter = painterResource(id = R.drawable.img_p), contentDescription = null)
+                    }
                 } else {
                     if (pagerState != null) {
                         ImageCarousel(pagerState, result, context)
@@ -156,36 +163,46 @@ fun UploadScreen(navController: NavHostController, viewModel: UploadViewModel) {
                         textColor = marrColor
                     )
                 } else {
-                    Spacer(modifier = Modifier.height(65.dp))
-                    Text(
-                        modifier = Modifier
-                            .clickable {
-                                try {
-                                    launcher.launch("image/*")
-                                } catch (e: Exception) {
-                                    Timber.e(e)
-                                }
-                            },
-                        text = if (state.value is UploadState.Init) "Upload" else "Re-Upload",
-                        lineHeight = 23.87.sp,
-                        textAlign = TextAlign.Center,
-                        fontSize = 20.sp,
-                        color = marrColor
-                    )
-                    Spacer(modifier = Modifier.height(35.dp))
-                    CovButton(
-                        title = "Run scanner",
-                        onClick = {
-                            val cxrModel = Covid.newInstance(context)
-                            val bitmaps = mutableListOf<Bitmap>()
-                            for (uri in result.value!!) {
-                                bitmaps.add(uriToBitmap(uri!!, context))
-                            }
-                            viewModel.process(cxrModel, bitmaps)
-                        },
-                        color = marrColor,
-                        enabled = state.value !is UploadState.Init
-                    )
+                    Box {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Spacer(modifier = Modifier.height(65.dp))
+                            Text(
+                                modifier = Modifier
+                                    .clickable {
+                                        try {
+                                            launcher.launch("image/*")
+                                        } catch (e: Exception) {
+                                            Timber.e(e)
+                                        }
+                                    },
+                                text = if (state.value is UploadState.Init) "Upload" else "Re-Upload",
+                                lineHeight = 23.87.sp,
+                                textAlign = TextAlign.Center,
+                                fontSize = 20.sp,
+                                color = marrColor
+                            )
+                            Spacer(modifier = Modifier.height(35.dp))
+                            CovButton(
+                                title = "Run scanner",
+                                onClick = {
+                                    val cxrModel = Covid.newInstance(context)
+                                    val bitmaps = mutableListOf<Bitmap>()
+                                    for (uri in result.value!!) {
+                                        bitmaps.add(uriToBitmap(uri!!, context))
+                                    }
+                                    viewModel.process(cxrModel, bitmaps)
+                                },
+                                color = marrColor,
+                                enabled = !(state.value is UploadState.Init || state.value is UploadState.Loading)
+                            )
+                        }
+                        if (state.value is UploadState.Loading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.align(Alignment.Center),
+                                color = marrColor
+                            )
+                        }
+                    }
                 }
             }
         }
