@@ -47,7 +47,7 @@ fun HomeScreen(
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
                         .padding(horizontal = 64.dp),
-                    text = "Upload a photo or take a picture",
+                    text = "Upload a photo or scan a picture",
                     lineHeight = 35.sp,
                     textAlign = TextAlign.Center,
                     fontSize = 25.sp,

@@ -43,7 +43,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startCameraActivity() {
-        startActivity(Intent(this, ClassifierActivity::class.java))
+        startActivity(Intent(this, CameraActivity::class.java))
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
