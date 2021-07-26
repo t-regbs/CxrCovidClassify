@@ -13,6 +13,7 @@ class PickImages : ActivityResultContract<String, List<Uri>>() {
         getIntent.type = "image/*"
         getIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         val pickIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI).apply {
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
             putExtra("crop", "true")
             putExtra("crop", "true")
             putExtra("scale", true)
@@ -22,7 +23,7 @@ class PickImages : ActivityResultContract<String, List<Uri>>() {
             putExtra("aspectY", 1)
             putExtra("return-data", true)
         }
-        val chooserIntent = Intent.createChooser(getIntent, "Select Image")
+        val chooserIntent = Intent.createChooser(getIntent, "Select Images")
         chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(pickIntent))
         return chooserIntent
     }

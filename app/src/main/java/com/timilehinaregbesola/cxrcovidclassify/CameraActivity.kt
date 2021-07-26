@@ -8,26 +8,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.camera.core.ExperimentalGetImage
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Text
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Color.Companion.White
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewModelScope
-import com.timilehinaregbesola.cxrcovidclassify.components.SimpleCameraPreview
+import com.timilehinaregbesola.cxrcovidclassify.screens.CameraScreen
 import com.timilehinaregbesola.cxrcovidclassify.ui.CxrCovidClassifyTheme
 import com.timilehinaregbesola.cxrcovidclassify.utils.CovidAnalyzer
 
@@ -62,53 +47,13 @@ class CameraActivity : ComponentActivity() {
         setContent {
             val prediction = viewModel.recognition.observeAsState()
             CxrCovidClassifyTheme {
-                Box {
-                    SimpleCameraPreview(
-                        analyzer = CovidAnalyzer(this@CameraActivity, viewModel.viewModelScope) { item ->
-                            // updating the list of recognised objects
-                            viewModel.updateData(item)
-                        }
-                    )
-                    Text(
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .background(color = Color(0, 0, 0, 53))
-                            .padding(16.dp),
-                        text = "Covid Scanner",
-                        textAlign = TextAlign.Center,
-                        color = White
-                    )
-                    if (prediction.value != null) {
-                        Row(
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .fillMaxWidth()
-                                .background(color = Color(0, 0, 0, 53)),
-                        ) {
-                            Text(
-                                modifier = Modifier
-                                    .weight(2f)
-                                    .padding(8.dp),
-                                text = prediction.value!!.label,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
-                                color = White
-                            )
-                            Text(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(8.dp),
-                                text = prediction.value!!.probabilityString,
-                                textAlign = TextAlign.End,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = White
-                            )
-                        }
-                    }
-                }
+                CameraScreen(
+                    analyzer = CovidAnalyzer(this@CameraActivity, viewModel.viewModelScope) { item ->
+                        // updating the list of recognised objects
+                        viewModel.updateData(item)
+                    },
+                    prediction = prediction
+                )
             }
         }
     }
