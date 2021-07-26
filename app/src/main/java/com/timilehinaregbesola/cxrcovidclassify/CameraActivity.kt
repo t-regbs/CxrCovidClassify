@@ -64,6 +64,17 @@ class CameraActivity : ComponentActivity() {
         ) == PackageManager.PERMISSION_GRANTED
     }
 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            REQUEST_CODE_PERMISSIONS -> {
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    setViewContent()
+                }
+            }
+        }
+    }
+
     companion object {
         private const val REQUEST_CODE_PERMISSIONS = 10
         private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)

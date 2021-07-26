@@ -52,6 +52,18 @@ class MainActivity : AppCompatActivity() {
         ) == PackageManager.PERMISSION_GRANTED
     }
 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            REQUEST_CODE_PERMISSIONS -> {
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // pick image after request permission success
+                    setViewContent()
+                }
+            }
+        }
+    }
+
     private fun Window.makeTransparentStatusBar() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
