@@ -14,9 +14,6 @@ import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 import timber.log.Timber
 
 class UploadViewModel : ViewModel() {
-    private val results: MutableLiveData<List<Float>> by lazy {
-        MutableLiveData<List<Float>>()
-    }
     private val _uploadState = MutableLiveData<UploadState>(UploadState.Init)
     val uploadState
         get() = _uploadState
@@ -42,12 +39,10 @@ class UploadViewModel : ViewModel() {
                 Timber.v("Detect: %s", outputs)
                 resultList.add(outputs)
             }
-//            results.postValue(resultList)
             _uploadState.postValue(UploadState.Scanned(floatListToPred(resultList)))
             model.close()
         }
     }
-//    fun getResult(): LiveData<List<Float>> = results
     fun setState(value: UploadState) {
         _uploadState.value = value
     }

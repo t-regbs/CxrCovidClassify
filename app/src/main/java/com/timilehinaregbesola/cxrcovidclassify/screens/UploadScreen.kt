@@ -33,9 +33,11 @@ import androidx.compose.material.Scaffold
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -65,7 +67,7 @@ import timber.log.Timber
 @Composable
 fun UploadScreen(navController: NavHostController, viewModel: UploadViewModel) {
     val context = LocalContext.current as Activity
-    val state = viewModel.uploadState.observeAsState(UploadState.Init)
+    val state by viewModel.uploadState.observeAsState(UploadState.Init)
     Surface(
         modifier = Modifier
             .fillMaxSize()
@@ -89,17 +91,17 @@ fun UploadScreen(navController: NavHostController, viewModel: UploadViewModel) {
                     .scrollable(state = rememberScrollState(), orientation = Orientation.Vertical),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val result = remember { mutableStateOf<List<Uri?>?>(null) }
+                var result by remember { mutableStateOf<List<Uri?>?>(null) }
                 var names = mutableListOf<String?>()
                 val launcher = rememberLauncherForActivityResult(PickImages()) {
-                    result.value = it
+                    result = it
                     viewModel.setState(UploadState.Unscanned)
                 }
-                result.value?.let {
+                result?.let {
                     pickImage(context, it, launcher)
                     names = getNameList(it, context.contentResolver) as MutableList<String?>
                 }
-                val pagerState = result.value?.size?.let { it1 ->
+                val pagerState = result?.size?.let { it1 ->
                     rememberPagerState(
                         pageCount = it1,
                         initialOffscreenLimit = 2,
@@ -110,7 +112,7 @@ fun UploadScreen(navController: NavHostController, viewModel: UploadViewModel) {
                     modifier = Modifier.padding(horizontal = 24.dp)
                 ) {
                     Text(
-                        text = if (result.value != null) "${pagerState!!.currentPage + 1} of ${result.value!!.size} " else "",
+                        text = if (result != null) "${pagerState!!.currentPage + 1} of ${result!!.size} " else "",
                         lineHeight = 35.sp,
                         textAlign = TextAlign.Center,
                         fontSize = 17.sp,
@@ -118,7 +120,7 @@ fun UploadScreen(navController: NavHostController, viewModel: UploadViewModel) {
                     )
                     Text(
                         modifier = Modifier.padding(start = 2.dp),
-                        text = if (result.value != null) names[pagerState!!.currentPage]!! else "",
+                        text = if (result != null) names[pagerState!!.currentPage]!! else "",
                         maxLines = 1,
                         lineHeight = 35.sp,
                         textAlign = TextAlign.Center,
@@ -127,7 +129,7 @@ fun UploadScreen(navController: NavHostController, viewModel: UploadViewModel) {
                     )
                 }
                 Spacer(modifier = Modifier.height(25.dp))
-                if (state.value is UploadState.Init) {
+                if (state is UploadState.Init) {
                     Card(
                         modifier = Modifier
                             .width(261.dp)
@@ -142,11 +144,11 @@ fun UploadScreen(navController: NavHostController, viewModel: UploadViewModel) {
                         ImageCarousel(pagerState, result, context)
                     }
                 }
-                if (state.value is UploadState.Scanned) {
+                if (state is UploadState.Scanned) {
                     Spacer(modifier = Modifier.height(45.dp))
                     if (pagerState != null) {
                         Text(
-                            text = "${state.value.pred[pagerState.currentPage].label}: ${state.value.pred[pagerState.currentPage].probabilityString}",
+                            text = "${state.pred[pagerState.currentPage].label}: ${state.pred[pagerState.currentPage].probabilityString}",
                             lineHeight = 23.87.sp,
                             textAlign = TextAlign.Center,
                             fontSize = 20.sp,
@@ -175,7 +177,7 @@ fun UploadScreen(navController: NavHostController, viewModel: UploadViewModel) {
                                             Timber.e(e)
                                         }
                                     },
-                                text = if (state.value is UploadState.Init) "Upload" else "Re-Upload",
+                                text = if (state is UploadState.Init) "Upload" else "Re-Upload",
                                 lineHeight = 23.87.sp,
                                 textAlign = TextAlign.Center,
                                 fontSize = 20.sp,
@@ -187,16 +189,16 @@ fun UploadScreen(navController: NavHostController, viewModel: UploadViewModel) {
                                 onClick = {
                                     val cxrModel = Covid.newInstance(context)
                                     val bitmaps = mutableListOf<Bitmap>()
-                                    for (uri in result.value!!) {
+                                    for (uri in result!!) {
                                         bitmaps.add(uriToBitmap(uri!!, context))
                                     }
                                     viewModel.process(cxrModel, bitmaps)
                                 },
                                 color = marrColor,
-                                enabled = !(state.value is UploadState.Init || state.value is UploadState.Loading)
+                                enabled = !(state is UploadState.Init || state is UploadState.Loading)
                             )
                         }
-                        if (state.value is UploadState.Loading) {
+                        if (state is UploadState.Loading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.align(Alignment.Center),
                                 color = marrColor

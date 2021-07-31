@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.Card
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -29,7 +28,7 @@ import kotlin.math.absoluteValue
 @Composable
 fun ImageCarousel(
     pagerState: PagerState?,
-    result: MutableState<List<Uri?>?>,
+    result: List<Uri?>?,
     context: Activity
 ) {
     HorizontalPager(
@@ -64,8 +63,8 @@ fun ImageCarousel(
             shape = MaterialTheme.shapes.medium.copy(CornerSize(24.dp)),
             elevation = 8.dp
         ) {
-            if (result.value != null) {
-                result.value!![page]?.let { it1 -> uriToBitmap(it1, context).asImageBitmap() }
+            if (result != null) {
+                result[page]?.let { it1 -> uriToBitmap(it1, context).asImageBitmap() }
                     ?.let { it2 ->
                         Image(
                             modifier = Modifier.fillMaxSize(),
