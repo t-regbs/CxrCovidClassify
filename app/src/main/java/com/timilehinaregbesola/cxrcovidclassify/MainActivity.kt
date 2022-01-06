@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
         setContent {
             CxrCovidClassifyTheme {
                 window.statusBarColor = MaterialTheme.colors.background.toArgb()
-                NavGraph(viewModel) { startCameraActivity() }
+                NavGraph(viewModel = viewModel) { startCameraActivity() }
             }
         }
     }

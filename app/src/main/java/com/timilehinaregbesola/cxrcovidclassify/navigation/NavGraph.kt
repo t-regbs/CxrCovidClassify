@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.timilehinaregbesola.cxrcovidclassify.UploadViewModel
 import com.timilehinaregbesola.cxrcovidclassify.screens.HomeScreen
+import com.timilehinaregbesola.cxrcovidclassify.screens.SplashScreen
 import com.timilehinaregbesola.cxrcovidclassify.screens.UploadScreen
 import com.timilehinaregbesola.cxrcovidclassify.utils.Navigation
 
@@ -18,7 +19,10 @@ fun NavGraph(
 ) {
     val navController = rememberNavController()
     Surface(color = MaterialTheme.colors.background) {
-        NavHost(navController = navController, startDestination = Navigation.NAV_HOME) {
+        NavHost(navController = navController, startDestination = Navigation.NAV_SPLASH) {
+            composable(Navigation.NAV_SPLASH) {
+                SplashScreen(navController)
+            }
             composable(Navigation.NAV_HOME) {
                 HomeScreen(navController, startCamera)
             }
