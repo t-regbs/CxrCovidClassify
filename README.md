@@ -2,6 +2,8 @@
 
 Covid Scanner is an android app built with Kotlin and Jetpack Compose that runs a deep learning model on-device which allows the user to either upload x-ray images or scan live from the camera and get an accurate prediction of whether the images are COVID positive or negative. 
 
+![](media/screens.png)
+
 ## Installation
 Covid Scanner requires a minimum API level of 21. Clone the repository.
 
