@@ -8,7 +8,9 @@ import android.os.Bundle
 import android.view.View
 import android.view.Window
 import android.view.WindowManager
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material.MaterialTheme
 import androidx.compose.ui.graphics.toArgb
@@ -18,11 +20,11 @@ import androidx.lifecycle.ViewModelProviders
 import com.timilehinaregbesola.cxrcovidclassify.navigation.NavGraph
 import com.timilehinaregbesola.cxrcovidclassify.ui.CxrCovidClassifyTheme
 
-class MainActivity : AppCompatActivity() {
-    private lateinit var viewModel: UploadViewModel
+class MainActivity : ComponentActivity() {
+    private val viewModel: UploadViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel = ViewModelProviders.of(this)[UploadViewModel::class.java]
+//        viewModel = ViewModelProviders.of(this)[UploadViewModel::class.java]
         window.makeTransparentStatusBar()
         if (allPermissionsGranted()) {
             setViewContent()

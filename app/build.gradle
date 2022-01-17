@@ -6,12 +6,12 @@ plugins {
 }
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 31
 
     defaultConfig {
         applicationId "com.timilehinaregbesola.cxrcovidclassify"
         minSdkVersion 22
-        targetSdkVersion 30
+        targetSdkVersion 31
         versionCode 1
         versionName "1.0"
 
@@ -26,8 +26,6 @@ android {
     }
     buildFeatures {
         compose true
-        viewBinding = true
-        dataBinding = true
         mlModelBinding true
     }
     compileOptions {
@@ -91,4 +89,7 @@ dependencies {
     implementation "androidx.navigation:navigation-compose:2.4.0-alpha04"
 
     implementation "androidx.compose.runtime:runtime-livedata:$compose_version"
+
+    //SplashScreen
+    implementation 'androidx.core:core-splashscreen:1.0.0-alpha02'
 }
