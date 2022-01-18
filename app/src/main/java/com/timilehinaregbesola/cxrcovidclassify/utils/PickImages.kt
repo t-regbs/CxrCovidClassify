@@ -28,13 +28,13 @@ class PickImages : ActivityResultContract<String, List<Uri>>() {
         return chooserIntent
     }
 
-    override fun parseResult(resultCode: Int, intent: Intent?): List<Uri>? {
+    override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> {
         return if (intent == null || resultCode != Activity.RESULT_OK) {
             emptyList<Uri>()
         } else getClipDataUris(intent)
     }
 
-    private fun getClipDataUris(intent: Intent): List<Uri>? {
+    private fun getClipDataUris(intent: Intent): List<Uri> {
         // Use a LinkedHashSet to maintain any ordering that may be
         // present in the ClipData
         val resultSet = LinkedHashSet<Uri>()
